@@ -18,9 +18,18 @@ st.write("Preencha as informações abaixo para estimar o consumo energético e 
 # --------------------------------------------------
 # CARREGAR MODELO E SCALER
 # --------------------------------------------------
-MODEL_PATH = joblib.load("../models/ecoagent_linear_model.pkl")
-SCALER_PATH = joblib.load("../models/ecoagent_scaler.pkl")
+import os
+import joblib
 
+# Caminho absoluto baseado na localização do arquivo app.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "ecoagent_linear_model.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "..", "models", "ecoagent_scaler.pkl")
+
+# Normaliza o caminho (para evitar erros de ../ em Windows)
+MODEL_PATH = os.path.normpath(MODEL_PATH)
+SCALER_PATH = os.path.normpath(SCALER_PATH)
 
 @st.cache_resource
 def load_artifacts():
