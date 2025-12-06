@@ -60,8 +60,20 @@ EcoAgent/
 ```
 
 ## Resultados e Demonstração
-[Adicione prints da aplicação em execução ou gráficos com os resultados do modelo/agente. Se for uma aplicação Web, coloque um print da interface.]
+### Interface Gráfica
+Nessa interface deve-se fazer o input das variáveis usadas no modelo e fazer a predição do gasto de energia
+<img width="1888" height="903" alt="image" src="https://github.com/user-attachments/assets/6a1a2a28-f2f3-4d94-b31d-88516bb12a77" />
+
+### Gráfico de resultados do melhor modelo - Regressão Linear
+<img width="1733" height="450" alt="image" src="https://github.com/user-attachments/assets/2724e20d-58cf-4ff8-820d-8b7131275b64" />
+
+### Resultado Final (Teste)
+- R² Score: 0.5947
+- RMSE:     5.1524
 
 ## Referências
-[Link para o Dataset original]
-[Artigo, Documentação ou Tutorial utilizado como base]
+- https://www.kaggle.com/datasets/mrsimple07/energy-consumption-prediction
+- https://scikit-learn.org/stable/
+- https://docs.streamlit.io/
+- https://matplotlib.org/
+- Russell, S.; Norvig, P. Artificial Intelligence: A Modern Approach – Referência teórica de métodos.
