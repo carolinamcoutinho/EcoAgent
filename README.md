@@ -10,38 +10,54 @@
 - Luiz Gustavo de Souza Rego (20220038835)
 
 ## Descrição do Projeto
-[Descreva aqui em 1 ou 2 parágrafos a proposta do projeto e as tecnologias utilizadas para seu desenvolvimento]
+O **EcoAgent** é um sistema de Inteligência Artificial desenvolvido para estimar o consumo energético de um ambiente com base em variáveis ambientais, estruturais e operacionais — como temperatura, umidade, ocupação, iluminação, energia renovável e dia da semana.  
+
+O projeto combina **modelos de Machine Learning** com uma **interface interativa em Streamlit**, permitindo que o usuário insira os dados e visualize instantaneamente a predição e os fatores que influenciaram o resultado.  
+
+As tecnologias utilizadas incluem **Python, Pandas, Numpy, Seaborn, Scikit-Learn, Streamlit, Matplotlib**
 
 ## Guia de Instalação e Execução
-[Descreva os passos para instalacao e execucao do projeto. Inclua um passo-a-passo claro de como utilizar a proposta desenvolvida. Veja o exemplo abaixo.]
-
 ### 1. Instalação das Dependências
 Certifique-se de ter o Python 3.x instalado. Clone o repositório e instale as bibliotecas listadas no requirements.txt:
 ```
 # Clone o repositório
-git clone [https://github.com/usuario/nome-do-repo.git](https://github.com/usuario/nome-do-repo.git)
+git clone [https://github.com/carolinamcoutinho/EcoAgent.git](https://github.com/carolinamcoutinho/EcoAgent.git)
 
 # Entre na pasta do projeto
-cd nome-do-repo
+cd EcoAgent
 
 # Instale as dependências
 pip install -r requirements.txt
 ```
 ### 2. Como Executar
-Execute o comando abaixo no terminal para iniciar o servidor local:
+Execute o Streamlit com:
 ```
-# Exemplo para Streamlit
 streamlit run src/app.py
 ```
 Se necessário, especifique a porta ou url de acesso, ex: http://localhost:8501
 
 ## Estrutura dos Arquivos
-[Descreva brevemente a organização das pastas]
-
-- src/: Código-fonte da aplicação ou scripts de processamento.
-- notebooks/: Análises exploratórias, testes e prototipagem.
-- data/: Datasets utilizados (se o tamanho permitir o upload).
-- assets/: Imagens, logos ou gráficos de resultados.
+```
+EcoAgent/
+│
+├── README.md
+├── requirements.txt
+│
+├── data/
+│   └── energy_dataset.csv          # Dataset original
+│
+├── models/
+│   ├── ecoagent_linear_model.pkl   # Modelo final salvo
+│   └── ecoagent_scaler.pkl         # Scaler usado no treinamento
+│
+├── notebooks/
+│   └── EcoAgent_Modeling.ipynb     # Notebook com EDA, testes e modelagem
+│
+├── src/
+│   └── app.py                      # Interface Streamlit
+│
+└── assets/
+```
 
 ## Resultados e Demonstração
 [Adicione prints da aplicação em execução ou gráficos com os resultados do modelo/agente. Se for uma aplicação Web, coloque um print da interface.]
