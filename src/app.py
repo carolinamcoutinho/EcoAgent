@@ -18,8 +18,9 @@ st.write("Preencha as informações abaixo para estimar o consumo energético e 
 # --------------------------------------------------
 # CARREGAR MODELO E SCALER
 # --------------------------------------------------
-MODEL_PATH = "ecoagent_linear_model.pkl"
-SCALER_PATH = "ecoagent_scaler.pkl"
+MODEL_PATH = joblib.load("../models/ecoagent_linear_model.pkl")
+SCALER_PATH = joblib.load("../models/ecoagent_scaler.pkl")
+
 
 @st.cache_resource
 def load_artifacts():
