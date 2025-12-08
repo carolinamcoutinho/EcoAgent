@@ -1,53 +1,33 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
+import model_predictor 
+import numpy as np 
 import joblib
 import matplotlib.pyplot as plt
+import agente_analyzer 
 
-# --------------------------------------------------
-# CONFIGURAÇÃO DA PÁGINA
-# --------------------------------------------------
 st.set_page_config(
     page_title="EcoAgent – Previsão Inteligente de Consumo",
     layout="wide"
 )
 
 st.title("🔌 EcoAgent – Previsão Inteligente de Consumo")
-st.write("Preencha as informações abaixo para estimar o consumo energético e visualizar os fatores que mais influenciaram a predição.")
-
-# --------------------------------------------------
-# CARREGAR MODELO E SCALER
-# --------------------------------------------------
-import os
-import joblib
-
-# Caminho absoluto baseado na localização do arquivo app.py
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-MODEL_PATH = os.path.join(BASE_DIR, "..", "models", "ecoagent_linear_model.pkl")
-SCALER_PATH = os.path.join(BASE_DIR, "..", "models", "ecoagent_scaler.pkl")
-
-# Normaliza o caminho (para evitar erros de ../ em Windows)
-MODEL_PATH = os.path.normpath(MODEL_PATH)
-SCALER_PATH = os.path.normpath(SCALER_PATH)
+st.write("Preencha as informações abaixo para estimar o consumo energético e receber análises inteligentes personalizadas.")
 
 @st.cache_resource
-def load_artifacts():
-    model = joblib.load(MODEL_PATH)
+def get_agent():
+    """Inicializa o agente inteligente (cache para performance)."""
+    return agente_analyzer.EnergyAnalysisAgent()
 
-    try:
-        scaler = joblib.load(SCALER_PATH)
-    except:
-        scaler = None
+agent = get_agent()
 
-    return model, scaler
+model = model_predictor.model
+scaler = model_predictor.scaler
+COLUMNS_ORDEM_FINAL = model_predictor.COLUMNS_ORDEM_FINAL
 
-model, scaler = load_artifacts()
+if model is None:
+    st.error("❌ Falha ao carregar o modelo de predição. Verifique os caminhos no `model_predictor.py`.")
 
-
-# ==================================================
-# SEÇÃO DE INPUTS
-# ==================================================
 st.header("📥 Insira os dados")
 
 col1, col2, col3 = st.columns(3)
@@ -109,31 +89,18 @@ with col3:
         help="Indique se o dia é um feriado."
     )
 
-
-# ==================================================
-# CONVERSÕES PARA FORMATO USADO PELO MODELO
-# ==================================================
-
 HVACUsage = 1 if HVACUsage_input == "On" else 0
 LightingUsage = 1 if LightingUsage_input == "On" else 0
 Holiday = 1 if Holiday_input == "Yes" else 0
 
 day_map = {
-    "Friday":"Day_Friday",
-    "Monday":"Day_Monday",
-    "Saturday":"Day_Saturday",
-    "Sunday":"Day_Sunday",
-    "Thursday":"Day_Thursday",
-    "Tuesday":"Day_Tuesday",
-    "Wednesday":"Day_Wednesday"
+    "Friday":"Day_Friday", "Monday":"Day_Monday", "Saturday":"Day_Saturday", "Sunday":"Day_Sunday", 
+    "Thursday":"Day_Thursday", "Tuesday":"Day_Tuesday", "Wednesday":"Day_Wednesday"
 }
 
 days_one_hot = {d: 0 for d in day_map.values()}
 days_one_hot[day_map[DayOfWeek]] = 1
 
-# ==================================================
-# MONTAR DATAFRAME FINAL
-# ==================================================
 input_dict = {
     "Temperature": Temperature,
     "Humidity": Humidity,
@@ -147,50 +114,108 @@ input_dict = {
 
 input_dict.update(days_one_hot)
 
-df_input = pd.DataFrame([input_dict])
+df_input_viz = pd.DataFrame([input_dict])
+try:
+    cols_for_viz = [c for c in COLUMNS_ORDEM_FINAL if c in df_input_viz.columns]
+    st.subheader("📄 Pré-visualização dos dados enviados para o modelo")
+    st.dataframe(df_input_viz[cols_for_viz].T, width=600)
+except Exception:
+    st.subheader("📄 Pré-visualização dos dados enviados para o modelo (Ordem Padrão)")
+    st.dataframe(df_input_viz.T, width=600)
 
-st.subheader("📄 Pré-visualização dos dados enviados para o modelo")
-st.dataframe(df_input.T, width=600)
-
-
-# ==================================================
-# BOTÃO DE PREDIÇÃO
-# ==================================================
-if st.button("🔍 Realizar Previsão"):
-
-    X = df_input.copy()
-
-    if scaler is not None:
-        try:
-            X_scaled = scaler.transform(X)
-            X_model = X_scaled
-        except:
-            st.error("Erro ao aplicar scaler. Verifique as colunas.")
-            X_model = X.values
+if st.button("🔮 Realizar Previsão", type="primary"):
+    
+    if model is None:
+        st.error("O modelo não está disponível para predição.")
     else:
-        X_model = X.values
+        try:
+            pred = model_predictor.predict_energy_consumption(input_dict)
 
-    pred = model.predict(X_model)[0]
+            coef_series = pd.Series(model.coef_.flatten(), index=COLUMNS_ORDEM_FINAL)
+            coef_series = coef_series.sort_values(key=abs, ascending=False)
+            
+            analysis = agent.analyze_consumption(
+                input_data=input_dict,
+                coefficients=coef_series,
+                prediction=pred,
+                top_n=5
+            )
+            
+            st.markdown("---")
+            st.subheader("🎯 Resultado da Previsão")
+            
+            col_metric1, col_metric2 = st.columns(2)
+            with col_metric1:
+                st.metric("⚡ Consumo Estimado", f"{pred:.2f} kWh")
+            with col_metric2:
+                consumption_level = analysis['consumption_level']
+                st.metric("📊 Nível de Consumo", consumption_level['label'])
+            
+            st.markdown(analysis['summary'])
+            
+            st.markdown("---")
+            st.subheader("🔍 Análise Detalhada dos Principais Fatores")
+            
+            for i, explanation in enumerate(analysis['explanations'], 1):
+                if explanation and explanation['message']:
+                    with st.expander(f"**{i}. {explanation['feature']}** (Impacto: {explanation['impact']})", expanded=(i==1)):
+                        st.markdown(explanation['message'])
+                        
+                        coef_val = explanation['coefficient']
+                        st.caption(f"📈 Coeficiente do modelo: {coef_val:.4f}")
+            
+            st.markdown("---")
+            st.subheader("📊 Importância das Variáveis")
+            st.write("Valores **positivos** aumentam o consumo previsto; valores **negativos** reduzem.")
+            
+            coef_series_viz = coef_series.copy()
+            coef_series_viz.index = coef_series_viz.index.str.replace('Day_', 'Dia ')
+            
+            st.bar_chart(coef_series_viz.head(10))
+            
 
-    st.subheader("🔮 Resultado da Previsão")
-    st.metric("Consumo Estimado (kWh)", f"{pred:.2f}")
+            st.markdown("---")
+            st.subheader("💡 Recomendações Personalizadas")
+            
+            for i, recommendation in enumerate(analysis['recommendations'], 1):
+                st.markdown(f"{i}. {recommendation}")
+            
 
-    # ==================================================
-    # EXPLICAÇÃO USANDO APENAS COEFICIENTES
-    # ==================================================
-    st.subheader("📊 Variáveis que mais influenciaram a predição")
+            st.markdown("---")
+            st.subheader("📈 Comparação de Cenários")
+            
+            col_comp1, col_comp2 = st.columns(2)
+            
+            with col_comp1:
+                st.info("**Cenário Atual**")
+                st.write(f"Consumo: **{pred:.2f} kWh**")
+                
+            with col_comp2:
+                optimized_input = input_dict.copy()
+                
+                if input_dict.get('Temperature', 0) > 28:
+                    optimized_input['Temperature'] = 26
+                if input_dict.get('Temperature', 0) < 18:
+                    optimized_input['Temperature'] = 20
+                    
+                try:
+                    pred_optimized = model_predictor.predict_energy_consumption(optimized_input)
+                    economia = pred - pred_optimized
+                    percentual = (economia / pred * 100) if pred > 0 else 0
+                    
+                    st.success("**Cenário Otimizado**")
+                    st.write(f"Consumo: **{pred_optimized:.2f} kWh**")
+                    if economia > 0:
+                        st.write(f"💰 Economia potencial: **{economia:.2f} kWh** ({percentual:.1f}%)")
+                except:
+                    st.write("Otimização não disponível")
 
-    try:
-        coef_series = pd.Series(model.coef_.flatten(), index=df_input.columns)
-        coef_series = coef_series.sort_values(key=abs, ascending=False)
-
-        st.write("Valores positivos aumentam o consumo previsto; valores negativos reduzem.")
-
-        st.bar_chart(coef_series)
-
-    except Exception as e:
-        st.error("Não foi possível calcular a importância das variáveis.")
-        st.write(e)
+        except Exception as e:
+            st.error("❌ Erro ao realizar a predição ou análise.")
+            st.write(f"Detalhes: {e}")
+            import traceback
+            st.code(traceback.format_exc())
 
 st.write("---")
-st.write("🔍 **EcoAgent** — Sistema Inteligente para Otimização de Consumo Energético.")
+st.write("📍 **EcoAgent** – Sistema Inteligente para Otimização de Consumo Energético.")
+st.caption("Desenvolvido com IA para análises contextualizadas e recomendações personalizadas.")
